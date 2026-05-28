@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import joblib
 import matplotlib.pyplot as plt
+import platform
 import os
 
 # -------------------------------
@@ -12,6 +13,23 @@ st.set_page_config(
     page_icon="🫁",
     layout="wide"
 )
+
+# -------------------------------
+# matplotlib 한글 설정
+# -------------------------------
+plt.rcParams['axes.unicode_minus'] = False
+
+system = platform.system()
+
+if system == 'Windows':
+    plt.rc('font', family='Malgun Gothic')
+
+elif system == 'Darwin':
+    plt.rc('font', family='AppleGothic')
+
+else:
+    # Streamlit Cloud (Linux)
+    plt.rc('font', family='DejaVu Sans')
 
 # -------------------------------
 # CSS 디자인
@@ -36,25 +54,26 @@ st.markdown("""
 /* 제목 */
 .main-title {
     text-align: center;
-    font-size: 45px;
+    font-size: 50px;
     font-weight: bold;
     color: #1565C0;
     margin-top: 10px;
 }
 
+/* 부제목 */
 .sub-title {
     text-align: center;
-    color: #666;
-    margin-bottom: 30px;
+    color: #555;
     font-size: 18px;
+    margin-bottom: 30px;
 }
 
 /* 카드 */
 .card {
-    background: rgba(255,255,255,0.88);
+    background: rgba(255,255,255,0.90);
     padding: 30px;
     border-radius: 25px;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.15);
 }
 
 /* 버튼 */
@@ -71,16 +90,15 @@ st.markdown("""
     color: white;
     font-size: 22px;
     font-weight: bold;
-    transition: 0.3s;
 }
 
 .stButton > button:hover {
     transform: scale(1.02);
 }
 
-/* Metric */
+/* metric */
 [data-testid="stMetricValue"] {
-    font-size: 45px;
+    font-size: 50px;
     color: #1565C0;
 }
 
@@ -88,24 +106,28 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # -------------------------------
-# 모델 불러오기
+# 모델 로드
 # -------------------------------
 model = joblib.load("g_model.pkl")
 
-# scaler 있으면 자동 사용
+# scaler 자동 로드
 scaler = None
 if os.path.exists("g_scaler.pkl"):
     scaler = joblib.load("g_scaler.pkl")
 
 # -------------------------------
-# 데이터 불러오기
+# 데이터 로드
 # -------------------------------
 df = pd.read_csv("lung.csv")
 
-# cluster 컬럼 없으면 자동 생성
+# cluster 컬럼 없으면 생성
 if "cluster" not in df.columns:
 
-    feature_cols = ['나이', '담배여부', '알코올']
+    feature_cols = [
+        '나이',
+        '담배여부',
+        '알코올'
+    ]
 
     X = df[feature_cols]
 
@@ -129,11 +151,16 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-st.markdown('<div class="card">', unsafe_allow_html=True)
+st.markdown(
+    '<div class="card">',
+    unsafe_allow_html=True
+)
 
 # -------------------------------
 # 입력 UI
 # -------------------------------
+st.subheader("📋 환자 정보 입력")
+
 col1, col2 = st.columns(2)
 
 with col1:
@@ -176,6 +203,7 @@ if st.button("🔍 환자 유형 분석하기"):
     )
 
     try:
+
         # 스케일링
         if scaler:
             new_patient_input = scaler.transform(
@@ -221,7 +249,7 @@ if st.button("🔍 환자 유형 분석하기"):
 
             elif cluster_num == 2:
                 st.error(
-                    "🚨 고위험 생활 습관군"
+                    "🚨 건강 위험군"
                 )
 
             else:
@@ -234,7 +262,9 @@ if st.button("🔍 환자 유형 분석하기"):
         # -------------------------------
         with col_graph:
 
-            st.subheader("📈 군집 위치 시각화")
+            st.subheader(
+                "📈 환자 군집 분포"
+            )
 
             fig, ax = plt.subplots(
                 figsize=(8, 6)
@@ -244,10 +274,10 @@ if st.button("🔍 환자 유형 분석하기"):
                 df['나이'],
                 df['담배여부'],
                 c=df['cluster'],
-                alpha=0.5
+                alpha=0.6
             )
 
-            # 현재 환자 표시
+            # 현재 환자 위치
             ax.scatter(
                 age,
                 smoking_num,
